@@ -580,6 +580,7 @@ class QuantumModelLearningAgent():
                 )
             ])
         else:
+            print('goblin2 ' + str(model_name))
             model_id = self._get_model_id_from_name(
                 model_name=model_name
             )
@@ -2450,7 +2451,7 @@ class QuantumModelLearningAgent():
         :param str name: model name to get data of
         :param str field: field name to get data corresponding to model
         """
-
+        print('goblin' + str(name) + ' ' + str(field))
         d = self.model_database[self.model_database['model_name'] == name][field].item()
         return d
 

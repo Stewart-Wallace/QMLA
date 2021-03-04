@@ -351,8 +351,8 @@ def get_num_qubits(name):
 
     :param str name: name of model
     """
-
     individual_terms = get_constituent_names_from_name(name)
+   
     for term in individual_terms:
         if (
             term[0:1] == 'h_'
@@ -363,13 +363,23 @@ def get_num_qubits(name):
             or 'transverse' in term
             or 'FH' in term
             or 'pauliLikewise' in term
+           
         ):
             terms = term.split('_')
             dim_term = terms[-1]
             dim = int(dim_term[1:])
             num_qubits = dim
             return num_qubits
-
+        elif(
+            'LiouvillianHam' in term
+            or 'LiouvillianDiss' in term
+        ):
+           
+            terms = term.split('_')
+            dim_term = terms[-1]
+            dim = int(dim_term[1:])
+            num_qubits = dim*2
+            return num_qubits
     max_t_found = 0
     t_str = ''
     while name.count(t_str + 'T') > 0:
@@ -377,7 +387,6 @@ def get_num_qubits(name):
     num_qubits = len(t_str) + 1
 
     return num_qubits
-
 
 def get_constituent_names_from_name(name):
     r"""

@@ -14,6 +14,7 @@ matplotlib # matplotlib==3.0.3
 networkx==2.3
 pep8==1.7.0
 pickleshare==0.7.5
+psutil
 pytest==5.3.5
 redis==3.5.3
 rq==1.7.0

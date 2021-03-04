@@ -18,6 +18,8 @@ string_processing_functions = {
     'FHchemical': qmla.string_processing_functions.process_fermi_hubbard_term,
     'FH-hopping-sum': qmla.string_processing_functions.process_fermi_hubbard_term,
     'FH-onsite-sum': qmla.string_processing_functions.process_fermi_hubbard_term,
+    'LiouvillianHam': qmla.string_processing_functions.process_liouvillian_hamiltonian_term,
+    'LiouvillianDiss': qmla.string_processing_functions.process_liouvillian_dissipative_term,
 }
 
 

@@ -169,7 +169,179 @@ def process_multipauli_term(term):
 
     full_mod_str = full_model_string(term_dict)
     return construct_models.compute(full_mod_str)
+    
+def process_liouvillian_hamiltonian_term(term):
+    from qmla.construct_models import core_operator_dict
+   
+        #Remove Handling Term
+    components = term.split('_')                                              
+    components.remove('LiouvillianHam')      
+                                   
+        #Extrapolation of system size, Pauli operators used, and positions aof matrices
+    N = int(components[-1].replace('d', ''))                                            
+    pointer = components[0]                                                    
+    positions = components[1:-1]
+   
+        #Initialistion of Hamiltonian and Placeholder for Tensor Products
+    ham = np.zeros((2**N,2**N))                                            
+    placeholdermatrix = 1
+    if list(pointer)[0] == 'l':                 #If statement to seperate single Pauli in Identities and Tensor Products between Paulis
+            #Single Pauli Matrix per term
+           
+            #Identifies Pauli Operator
+        operator = list(pointer)[1]
+        for cc in positions:                    #Iterates over each position for Pauli Matrix to be applied
+            if len(cc) == 1:                    
+                    #Single Site to apply Pauli matrix
+                for pp in range(N):             #Iterates over every site to apply a matrix
+                    if pp+1 == int(cc):
+                       
+                            #Apply operator to pp site
+                        placeholdermatrix = np.kron(placeholdermatrix,core_operator_dict[operator])
+                    else:
+                       
+                            #Apply identity to pp site
+                        placeholdermatrix = np.kron(placeholdermatrix,np.identity(2))  
+            else:
+                    #Multiple Sites to apply Pauli Opoerator to
+                   
+                    #Identifies sites for Pauli matrix application
+                sites = cc.split('J')
+                for pp in range(N):             #Iterates over every site to apply a matrix
+                    if str(pp+1) in sites:
+                       
+                            #Apply operator to pp site
+                        placeholdermatrix = np.kron(placeholdermatrix,core_operator_dict[operator])
+                    else:
+                       
+                            #Apply identity to pp site
+                        placeholdermatrix = np.kron(placeholdermatrix,np.identity(2))  
+                       
+                #Adds latest term to Hamiltonian and refreshes for next set of tensor products
+            ham = ham + placeholdermatrix
+            placeholdermatrix = 1
+    else:      
+            #Multiple Pauli Matrices per Site
+           
+            #Identifying Pauli Matrices applied to sites
+        pointer = list(pointer.replace('J', ''))
 
+        for pp in positions:                    #Iterates over sites that Operator set should be applied
+               
+                #Identifies sites for matrix application
+            sites = pp.split('J')
+
+            if len(sites) == len(pointer):      #Checks that there is a one to one pairing between matrices and sites
+           
+                    #Sets counter to identify when an operator is used
+                counter = 0
+                for nn in range(N):             #Iterates over every site
+                    if str(nn+1) in sites:
+                       
+                            #Apply operator to pp site and increases counter to note the application of operator
+                        placeholdermatrix = np.kron(placeholdermatrix,core_operator_dict[pointer[counter]])
+                        counter = counter + 1
+                    else:
+                       
+                            #Apply Identity to pp site
+                        placeholdermatrix = np.kron(placeholdermatrix,np.identity(2))  
+            else:           #Error if the length of the Pauli matrices and the sites for them to be applied to is different.
+                NameError('you have accidentally tried to tensor a number of matrices over a different number of sites.')
+           
+                #Adds latest term to Hamiltonian and refreshes for next set of tensor products
+            ham = ham + placeholdermatrix
+            placeholdermatrix = 1
+   
+        #Finally combines Hamiltonian matrices into large Von-Neumann Equation in Liouville Space
+    mtx = -1j*(np.kron(ham,np.identity(2**N)) - np.kron(np.identity(2**N),ham.T))
+    return mtx
+
+def process_liouvillian_dissipative_term(term):
+    from qmla.construct_models import core_operator_dict
+   
+        #Remove Handling Term
+    components = term.split('_')
+    components.remove('LiouvillianDiss')
+   
+        #Extrapolation of system size, Pauli operators used, and positions aof matrices
+    N = int(components[-1].replace('d', ''))
+    pointer = components[0]
+    positions = components[1:-1]
+   
+        #Initialistion of Dissipation Matrix and Placeholder for Tensor Products
+    diss = np.zeros((2**N,2**N))
+    placeholdermatrix = 1
+    if list(pointer)[0] == 'l':              #If statement to seperate single Pauli in Identities and Tensor Products between Paulis
+            #Single Pauli Matrix per term
+           
+            #Identifies Pauli Operator
+        operator = list(pointer)[1]
+                                                                                #no check that matrix is in dict
+        for cc in positions:                #Iterate over positions to apply single Pauli Operator
+            if len(cc) == 1:                
+                    #Single Pauli to a Single site
+                   
+                for pp in range(N):         #Iterate through sites to pad Identities
+                    if pp+1 == int(cc):     #Checks if site pp is where the operator is to applied
+                   
+                            #Applies Operator to site pp
+                        placeholdermatrix = np.kron(placeholdermatrix,core_operator_dict[operator])
+                    else:
+                       
+                            #Applies Identity to site pp
+                        placeholdermatrix = np.kron(placeholdermatrix,np.identity(2))
+            else:                          
+                    #Multiple sites are tensored with the same Pauli Matrix
+           
+                    #Identifies afflicted sites
+                sites = cc.split('J')
+                for pp in range(N):         #Iterate through sites to pad Identities (similar to above)
+                    if str(pp+1) in sites:
+                       
+                            #Applies Operator to site pp
+                        placeholdermatrix = np.kron(placeholdermatrix,core_operator_dict[operator])
+                    else:
+                       
+                            #Applies Identity to site pp
+                        placeholdermatrix = np.kron(placeholdermatrix,np.identity(2))  
+                       
+                #Taking the sum of tensor products then resetting for next product
+            diss = diss + placeholdermatrix
+            placeholdermatrix = 1
+    else:      
+            #Multiple Pauli Matrices per Site
+           
+            #Identifying Pauli Matrices apploied to sites
+        pointer = list(pointer.replace('J', ''))
+        for pp in positions:                #Iterates positions previously identified
+           
+                #Seperates the positions into single sights to be paired with single Pauli Matrices
+            sites = pp.split('J')
+            if len(sites) == len(pointer):  #Checks that there is a one to one pairing between matrices and sites
+           
+                    #Starts counter to identify when a Pauli Matrix and its site have been applied
+                counter = 0
+                for nn in range(N):         #Iterates through system size to either apply Pauli Matrix or identity
+                    if str(nn+1) in sites:  #Identifies where nn is to be a matrix or an identity
+                   
+                            #Apply operator to nn site and noting the use of an operator, through counter
+                        placeholdermatrix = np.kron(placeholdermatrix,core_operator_dict[pointer[counter]])
+                        counter = counter + 1
+                    else:
+                       
+                            #Apply identity to nn site
+                        placeholdermatrix = np.kron(placeholdermatrix,np.identity(2))  
+            else:                           #Error if the length of the Pauli matrices and the sites for them to be applied to is different.
+                NameError('you have accidentally tried to tensor a number of matrices over a different number of sites.')
+               
+                #Taking the sum of tensor products then resetting for next product
+            diss = diss + placeholdermatrix
+            placeholdermatrix = 1
+   
+        #Finally combines dissipation matrices into large Liouvillian matrix
+    mtx = (np.kron(diss,diss.conj()) - 0.5*(np.kron(np.dot(diss.conj().T,diss),np.identity(2**N)) +
+                                             np.kron(np.identity(2**N),np.dot(diss.conj().T,diss).T)))
+    return mtx
 
 def process_likewise_pauli_sum(term):
     r"""
